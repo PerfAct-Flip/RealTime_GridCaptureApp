@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
-import dotenv from "dotenv";
-dotenv.config();
-export const socket = io(import.meta.env.VITE_SOCKET_URL, {
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL as string;
+
+export const socket = io(SOCKET_URL, {
   autoConnect: false,
 });
