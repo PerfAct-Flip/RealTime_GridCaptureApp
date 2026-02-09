@@ -23,7 +23,6 @@ export default function App() {
     localStorage.getItem("username") || ""
   );
   const [onlineCount, setOnlineCount] = useState(0);
-  /* ---------------- SOCKET EVENTS ---------------- */
 
   useEffect(() => {
     if (!joined) return;
