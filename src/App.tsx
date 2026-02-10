@@ -24,10 +24,25 @@ export default function App() {
   );
   const [onlineCount, setOnlineCount] = useState(0);
 
+  const [isConnected, setIsConnected] = useState(socket.connected);
+
   useEffect(() => {
     if (!joined) return;
 
     socket.connect();
+
+    const onConnect = () => {
+      setIsConnected(true);
+      const color = getColorFromUsername(username);
+      socket.emit("join", { username, color });
+    };
+
+    const onDisconnect = () => {
+      setIsConnected(false);
+    };
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
 
     socket.on("grid:init", (serverGrid: CellOwner[]) => {
       setGrid(serverGrid);
@@ -49,20 +64,29 @@ export default function App() {
     );
 
     return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("grid:init");
+      socket.off("players:count");
+      socket.off("grid:update");
       socket.disconnect();
     };
-  }, [joined]);
+  }, [joined, username]);
+
   const handleJoin = () => {
     if (!username.trim()) return;
-
-    const color = getColorFromUsername(username);
     localStorage.setItem("username", username);
-    socket.emit("join", { username, color });
     setJoined(true);
   };
 
   const handleCapture = (cellId: number) => {
     socket.emit("capture", { cellId });
+  };
+
+  const handleReset = () => {
+    if (window.confirm("Are you sure you want to clear the entire grid?")) {
+      socket.emit("grid:reset");
+    }
   };
 
   if (!joined) {
@@ -116,12 +140,22 @@ export default function App() {
         </h1>
         <div className="flex gap-4">
           <div className="glass-panel px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-white/70">{onlineCount || 1} ONLINE</span>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+            <span className="text-white/70">{isConnected ? 'CONNECTED' : 'DISCONNECTED'}</span>
+          </div>
+          <div className="glass-panel px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500" />
+            <span className="text-white/70">{onlineCount} ONLINE</span>
           </div>
           <div className="glass-panel px-4 py-1.5 rounded-full text-xs font-bold text-brand-blue">
             {capturedCount} PIXELS OWNED
           </div>
+          <button
+            onClick={handleReset}
+            className="glass-panel px-4 py-1.5 rounded-full text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors border border-red-400/20"
+          >
+            RESET GRID
+          </button>
         </div>
       </header>
 
